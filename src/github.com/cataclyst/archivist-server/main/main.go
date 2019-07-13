@@ -14,7 +14,7 @@ import (
 	"math/rand"
 )
 
-const sqlite_date_format_iso_8601 = "2006-01-02 15:04:05Z07:00"
+const sqliteDateFormatIso8601 = "2006-01-02 15:04:05Z07:00"
 
 func main() {
 	fmt.Println("Hello World")
@@ -74,7 +74,7 @@ func insertTestData() {
 }
 
 func asDatabaseTime(input time.Time) string {
-	return input.UTC().Format(sqlite_date_format_iso_8601)
+	return input.UTC().Format(sqliteDateFormatIso8601)
 }
 
 type ArchivistHandler struct{}
