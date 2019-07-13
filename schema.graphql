@@ -1,0 +1,19 @@
+type Document {
+    id: ID!
+    title: String!
+    description: String
+    date: String!
+    tags: [Tag!]!
+    createdAt: String!
+    modifiedAt: String!
+}
+
+type Tag {
+    title: String
+    context: String
+}
+
+type Query {
+    recentDocuments: [Document!]
+    tags: [Tag!]
+}
