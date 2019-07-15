@@ -9,7 +9,7 @@ type Document {
 }
 
 type Tag {
-    title: String
+    title: String!
     context: String
 }
 

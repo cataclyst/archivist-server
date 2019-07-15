@@ -8,18 +8,29 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-
+	"math/rand"
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
-	"math/rand"
+	"github.com/cataclyst/archivist-server/graphql"
 )
 
 const sqliteDateFormatIso8601 = "2006-01-02 15:04:05Z07:00"
 
 func main() {
-	fmt.Println("Hello World")
 
-	insertTestData()
+	fmt.Println("Connecting to SQLite database")
+	db, err := sql.Open("sqlite3", "./foo.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	fmt.Println("Starting GraphQL server...")
+	go graphql.StartGraphQlServer(0, db)
+
+	fmt.Println("Starting API server")
+
+	insertTestData(db)
 
 	archivistHandler := &ArchivistHandler{}
 
@@ -33,16 +44,10 @@ func main() {
 	log.Fatal(server.ListenAndServe())
 }
 
-func insertTestData() {
-
-	db, err := sql.Open("sqlite3", "./foo3.db")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+func insertTestData(db *sql.DB) {
 
 	sqlStmt := `create table if not exists Document (id text not null primary key, title text not null, description text, date text not null, created_at text not null, modified_at text not null);`
-	_, err = db.Exec(sqlStmt)
+	_, err := db.Exec(sqlStmt)
 	if err != nil {
 		log.Fatalf("%q: %s\n", err, sqlStmt)
 	}

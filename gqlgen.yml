@@ -1,0 +1,25 @@
+# .gqlgen.yml example
+#
+# Refer to https://gqlgen.com/config/
+# for detailed .gqlgen.yml documentation.
+
+schema:
+- schema.graphql
+exec:
+  filename: graphql/generated.go
+models:
+  Document:
+    model: github.com/cataclyst/archivist-server/models.Document
+  Tag:
+    model: github.com/cataclyst/archivist-server/models.Tag
+resolver:
+  filename: graphql/resolver.go
+  type: Resolver
+autobind: []
+# directives:
+#   deprecated:
+#     skip_runtime: true
+#   include:
+#     skip_runtime: true
+#   skip:
+#     skip_runtime: true
