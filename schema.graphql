@@ -17,3 +17,21 @@ type Query {
     recentDocuments: [Document!]
     tags: [Tag!]
 }
+
+type Mutation {
+    createDocument(input: DocumentInput): Document
+}
+
+input DocumentInput {
+    title: String!
+    description: String
+    date: String!
+    tags: [TagInput]!
+    createdAt: String!
+    modifiedAt: String!
+}
+
+input TagInput {
+    title: String!
+    context: String
+}
