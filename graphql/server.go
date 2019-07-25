@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"strconv"
 	"database/sql"
-
+	
 	"github.com/99designs/gqlgen/handler"
+	"github.com/rs/cors"
 )
 
 const defaultPort = 9090
@@ -19,11 +20,24 @@ func StartGraphQlServer(port int, db *sql.DB) {
 		port = defaultPort
 	}
 
-	http.Handle("/", handler.Playground("GraphQL playground", "/query"))
-	http.Handle("/query", handler.GraphQL(NewExecutableSchema(Config{Resolvers: &Resolver{
+	playgroundHandler := handler.Playground("GraphQL playground", "/query")
+	queryHandler := handler.GraphQL(NewExecutableSchema(Config{Resolvers: &Resolver{
 		db:db,
-	}})))
+	}}))
 
-	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
-	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), nil))
+	corsHandler := cors.New(cors.Options{
+		AllowedOrigins: []string{"http://localhost:3000"},
+	})
+
+	mux := http.NewServeMux()
+	mux.Handle("/", playgroundHandler)
+	mux.Handle("/query", queryHandler)
+
+	// http.Handle("/", handler.Playground("GraphQL playground", "/query"))
+	// http.Handle("/query", handler.GraphQL(NewExecutableSchema(Config{Resolvers: &Resolver{
+	// 	db:db,
+	// }})))
+
+	log.Printf("connect to http://localhost:%d/ for GraphQL playground", port)
+	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), corsHandler.Handler(mux)))
 }
