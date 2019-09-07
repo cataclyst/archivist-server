@@ -3,6 +3,7 @@ package graphql
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"time"
 
@@ -22,6 +23,9 @@ func (r *Resolver) Document() DocumentResolver {
 }
 func (r *Resolver) Query() QueryResolver {
 	return &queryResolver{r}
+}
+func (r *Resolver) Mutation() MutationResolver {
+	panic("implement me")
 }
 
 type documentResolver struct{ *Resolver }
@@ -60,6 +64,30 @@ func (r *queryResolver) RecentDocuments(ctx context.Context) ([]*models.Document
 
 	return result, nil
 }
+
+func (r *queryResolver) Document(ctx context.Context, id string) (*models.Document, error) {
+	log.Printf("Getting document for ID %s...", id)
+	sqlStmt := `select id, title, description, date from Document where id = ?;`
+	row := r.Resolver.db.QueryRowContext(ctx, sqlStmt, id)
+
+	var result models.Document
+	err := row.Scan(
+		&result.ID,
+		&result.Title,
+		&result.Description,
+		&result.Date)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("no document found with ID %s", id)
+		}
+		return nil, errors.Wrap(err, "Could not scan database row to models.Document")
+	}
+
+	log.Printf("the result: %v", result)
+
+	return &result, nil
+}
+
 func (r *queryResolver) Tags(ctx context.Context) ([]*models.Tag, error) {
 	panic("not implemented")
 }

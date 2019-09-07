@@ -12,6 +12,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
+	archivist_server "github.com/cataclyst/archivist-server"
 	"github.com/cataclyst/archivist-server/models"
 	"github.com/vektah/gqlparser"
 	"github.com/vektah/gqlparser/ast"
@@ -36,6 +37,7 @@ type Config struct {
 
 type ResolverRoot interface {
 	Document() DocumentResolver
+	Mutation() MutationResolver
 	Query() QueryResolver
 }
 
@@ -53,7 +55,12 @@ type ComplexityRoot struct {
 		Title       func(childComplexity int) int
 	}
 
+	Mutation struct {
+		CreateDocument func(childComplexity int, input *archivist_server.DocumentInput) int
+	}
+
 	Query struct {
+		Document        func(childComplexity int, id string) int
 		RecentDocuments func(childComplexity int) int
 		Tags            func(childComplexity int) int
 	}
@@ -67,8 +74,12 @@ type ComplexityRoot struct {
 type DocumentResolver interface {
 	Tags(ctx context.Context, obj *models.Document) ([]*models.Tag, error)
 }
+type MutationResolver interface {
+	CreateDocument(ctx context.Context, input *archivist_server.DocumentInput) (*models.Document, error)
+}
 type QueryResolver interface {
 	RecentDocuments(ctx context.Context) ([]*models.Document, error)
+	Document(ctx context.Context, id string) (*models.Document, error)
 	Tags(ctx context.Context) ([]*models.Tag, error)
 }
 
@@ -136,6 +147,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Document.Title(childComplexity), true
 
+	case "Mutation.createDocument":
+		if e.complexity.Mutation.CreateDocument == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createDocument_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateDocument(childComplexity, args["input"].(*archivist_server.DocumentInput)), true
+
+	case "Query.document":
+		if e.complexity.Query.Document == nil {
+			break
+		}
+
+		args, err := ec.field_Query_document_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Document(childComplexity, args["id"].(string)), true
+
 	case "Query.recentDocuments":
 		if e.complexity.Query.RecentDocuments == nil {
 			break
@@ -186,7 +221,20 @@ func (e *executableSchema) Query(ctx context.Context, op *ast.OperationDefinitio
 }
 
 func (e *executableSchema) Mutation(ctx context.Context, op *ast.OperationDefinition) *graphql.Response {
-	return graphql.ErrorResponse(ctx, "mutations are not supported")
+	ec := executionContext{graphql.GetRequestContext(ctx), e}
+
+	buf := ec.RequestMiddleware(ctx, func(ctx context.Context) []byte {
+		data := ec._Mutation(ctx, op.SelectionSet)
+		var buf bytes.Buffer
+		data.MarshalGQL(&buf)
+		return buf.Bytes()
+	})
+
+	return &graphql.Response{
+		Data:       buf,
+		Errors:     ec.Errors,
+		Extensions: ec.Extensions,
+	}
 }
 
 func (e *executableSchema) Subscription(ctx context.Context, op *ast.OperationDefinition) func() *graphql.Response {
@@ -230,13 +278,46 @@ type Tag {
 
 type Query {
     recentDocuments: [Document!]
+    document(id: ID!): Document!
     tags: [Tag!]
+}
+
+type Mutation {
+    createDocument(input: DocumentInput): Document
+}
+
+input DocumentInput {
+    title: String!
+    description: String
+    date: String!
+    tags: [TagInput]!
+    createdAt: String!
+    modifiedAt: String!
+}
+
+input TagInput {
+    title: String!
+    context: String
 }`},
 )
 
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_createDocument_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *archivist_server.DocumentInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalODocumentInput2ᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚐDocumentInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -249,6 +330,20 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_document_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -544,6 +639,47 @@ func (ec *executionContext) _Document_modifiedAt(ctx context.Context, field grap
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_createDocument(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createDocument_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateDocument(rctx, args["input"].(*archivist_server.DocumentInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.Document)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalODocument2ᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚋmodelsᚐDocument(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_recentDocuments(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
@@ -576,6 +712,50 @@ func (ec *executionContext) _Query_recentDocuments(ctx context.Context, field gr
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalODocument2ᚕᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚋmodelsᚐDocument(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_document(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_document_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Document(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Document)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNDocument2ᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚋmodelsᚐDocument(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_tags(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1909,6 +2089,78 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputDocumentInput(ctx context.Context, obj interface{}) (archivist_server.DocumentInput, error) {
+	var it archivist_server.DocumentInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "title":
+			var err error
+			it.Title, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "date":
+			var err error
+			it.Date, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tags":
+			var err error
+			it.Tags, err = ec.unmarshalNTagInput2ᚕᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚐTagInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "createdAt":
+			var err error
+			it.CreatedAt, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "modifiedAt":
+			var err error
+			it.ModifiedAt, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputTagInput(ctx context.Context, obj interface{}) (archivist_server.TagInput, error) {
+	var it archivist_server.TagInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "title":
+			var err error
+			it.Title, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "context":
+			var err error
+			it.Context, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -1980,6 +2232,34 @@ func (ec *executionContext) _Document(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
+var mutationImplementors = []string{"Mutation"}
+
+func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, mutationImplementors)
+
+	ctx = graphql.WithResolverContext(ctx, &graphql.ResolverContext{
+		Object: "Mutation",
+	})
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Mutation")
+		case "createDocument":
+			out.Values[i] = ec._Mutation_createDocument(ctx, field)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -2004,6 +2284,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_recentDocuments(ctx, field)
+				return res
+			})
+		case "document":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_document(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "tags":
@@ -2413,6 +2707,26 @@ func (ec *executionContext) marshalNTag2ᚖgithubᚗcomᚋcataclystᚋarchivist�
 	return ec._Tag(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNTagInput2ᚕᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚐTagInput(ctx context.Context, v interface{}) ([]*archivist_server.TagInput, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]*archivist_server.TagInput, len(vSlice))
+	for i := range vSlice {
+		res[i], err = ec.unmarshalOTagInput2ᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚐTagInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
 	return ec.___Directive(ctx, sel, &v)
 }
@@ -2662,6 +2976,10 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return ec.marshalOBoolean2bool(ctx, sel, *v)
 }
 
+func (ec *executionContext) marshalODocument2githubᚗcomᚋcataclystᚋarchivistᚑserverᚋmodelsᚐDocument(ctx context.Context, sel ast.SelectionSet, v models.Document) graphql.Marshaler {
+	return ec._Document(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalODocument2ᚕᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚋmodelsᚐDocument(ctx context.Context, sel ast.SelectionSet, v []*models.Document) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -2700,6 +3018,25 @@ func (ec *executionContext) marshalODocument2ᚕᚖgithubᚗcomᚋcataclystᚋar
 	}
 	wg.Wait()
 	return ret
+}
+
+func (ec *executionContext) marshalODocument2ᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚋmodelsᚐDocument(ctx context.Context, sel ast.SelectionSet, v *models.Document) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Document(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalODocumentInput2githubᚗcomᚋcataclystᚋarchivistᚑserverᚐDocumentInput(ctx context.Context, v interface{}) (archivist_server.DocumentInput, error) {
+	return ec.unmarshalInputDocumentInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalODocumentInput2ᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚐDocumentInput(ctx context.Context, v interface{}) (*archivist_server.DocumentInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalODocumentInput2githubᚗcomᚋcataclystᚋarchivistᚑserverᚐDocumentInput(ctx, v)
+	return &res, err
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {
@@ -2763,6 +3100,18 @@ func (ec *executionContext) marshalOTag2ᚕᚖgithubᚗcomᚋcataclystᚋarchivi
 	}
 	wg.Wait()
 	return ret
+}
+
+func (ec *executionContext) unmarshalOTagInput2githubᚗcomᚋcataclystᚋarchivistᚑserverᚐTagInput(ctx context.Context, v interface{}) (archivist_server.TagInput, error) {
+	return ec.unmarshalInputTagInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalOTagInput2ᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚐTagInput(ctx context.Context, v interface{}) (*archivist_server.TagInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOTagInput2githubᚗcomᚋcataclystᚋarchivistᚑserverᚐTagInput(ctx, v)
+	return &res, err
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValue(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

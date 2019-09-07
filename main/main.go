@@ -4,14 +4,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/cataclyst/archivist-server/graphql"
+	"github.com/google/uuid"
+	_ "github.com/mattn/go-sqlite3"
 	"log"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
-	"math/rand"
-	"github.com/google/uuid"
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/cataclyst/archivist-server/graphql"
 )
 
 const sqliteDateFormatIso8601 = "2006-01-02 15:04:05Z07:00"
