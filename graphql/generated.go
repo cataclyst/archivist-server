@@ -56,7 +56,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateDocument func(childComplexity int, input *archivist_server.DocumentInput) int
+		CreateDocument func(childComplexity int, input archivist_server.DocumentInput) int
 	}
 
 	Query struct {
@@ -75,7 +75,7 @@ type DocumentResolver interface {
 	Tags(ctx context.Context, obj *models.Document) ([]*models.Tag, error)
 }
 type MutationResolver interface {
-	CreateDocument(ctx context.Context, input *archivist_server.DocumentInput) (*models.Document, error)
+	CreateDocument(ctx context.Context, input archivist_server.DocumentInput) (*models.Document, error)
 }
 type QueryResolver interface {
 	RecentDocuments(ctx context.Context) ([]*models.Document, error)
@@ -157,7 +157,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateDocument(childComplexity, args["input"].(*archivist_server.DocumentInput)), true
+		return e.complexity.Mutation.CreateDocument(childComplexity, args["input"].(archivist_server.DocumentInput)), true
 
 	case "Query.document":
 		if e.complexity.Query.Document == nil {
@@ -283,7 +283,7 @@ type Query {
 }
 
 type Mutation {
-    createDocument(input: DocumentInput): Document
+    createDocument(input: DocumentInput!): Document
 }
 
 input DocumentInput {
@@ -291,8 +291,6 @@ input DocumentInput {
     description: String
     date: String!
     tags: [TagInput]!
-    createdAt: String!
-    modifiedAt: String!
 }
 
 input TagInput {
@@ -308,9 +306,9 @@ input TagInput {
 func (ec *executionContext) field_Mutation_createDocument_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *archivist_server.DocumentInput
+	var arg0 archivist_server.DocumentInput
 	if tmp, ok := rawArgs["input"]; ok {
-		arg0, err = ec.unmarshalODocumentInput2ᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚐDocumentInput(ctx, tmp)
+		arg0, err = ec.unmarshalNDocumentInput2githubᚗcomᚋcataclystᚋarchivistᚑserverᚐDocumentInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -665,7 +663,7 @@ func (ec *executionContext) _Mutation_createDocument(ctx context.Context, field 
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateDocument(rctx, args["input"].(*archivist_server.DocumentInput))
+		return ec.resolvers.Mutation().CreateDocument(rctx, args["input"].(archivist_server.DocumentInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2119,18 +2117,6 @@ func (ec *executionContext) unmarshalInputDocumentInput(ctx context.Context, obj
 			if err != nil {
 				return it, err
 			}
-		case "createdAt":
-			var err error
-			it.CreatedAt, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "modifiedAt":
-			var err error
-			it.ModifiedAt, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
 		}
 	}
 
@@ -2628,6 +2614,10 @@ func (ec *executionContext) marshalNDocument2ᚖgithubᚗcomᚋcataclystᚋarchi
 	return ec._Document(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNDocumentInput2githubᚗcomᚋcataclystᚋarchivistᚑserverᚐDocumentInput(ctx context.Context, v interface{}) (archivist_server.DocumentInput, error) {
+	return ec.unmarshalInputDocumentInput(ctx, v)
+}
+
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
 	return graphql.UnmarshalID(v)
 }
@@ -3025,18 +3015,6 @@ func (ec *executionContext) marshalODocument2ᚖgithubᚗcomᚋcataclystᚋarchi
 		return graphql.Null
 	}
 	return ec._Document(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalODocumentInput2githubᚗcomᚋcataclystᚋarchivistᚑserverᚐDocumentInput(ctx context.Context, v interface{}) (archivist_server.DocumentInput, error) {
-	return ec.unmarshalInputDocumentInput(ctx, v)
-}
-
-func (ec *executionContext) unmarshalODocumentInput2ᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚐDocumentInput(ctx context.Context, v interface{}) (*archivist_server.DocumentInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalODocumentInput2githubᚗcomᚋcataclystᚋarchivistᚑserverᚐDocumentInput(ctx, v)
-	return &res, err
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

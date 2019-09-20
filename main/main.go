@@ -5,10 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/cataclyst/archivist-server/graphql"
-	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
@@ -46,10 +44,17 @@ func main() {
 
 func insertTestData(db *sql.DB) {
 
-	sqlStmt := `create table if not exists Document (id text not null primary key, title text not null, description text, date text not null, created_at text not null, modified_at text not null);`
-	_, err := db.Exec(sqlStmt)
-	if err != nil {
-		log.Fatalf("%q: %s\n", err, sqlStmt)
+	sqlStmts := []string {
+		`create table if not exists Document (id text not null primary key, title text not null, description text, date text not null, created_at text not null, modified_at text not null);`,
+		`create table if not exists Tag (id text not null primary key, title text not null, context text);`,
+		`create table if not exists Document_Tag (document_id text not null, tag_id text not null);`,
+	}
+
+	for _, sqlStmt := range sqlStmts {
+		_, err := db.Exec(sqlStmt)
+		if err != nil {
+			log.Fatalf("%q: %s\n", err, sqlStmt)
+		}
 	}
 
 	tx, err := db.Begin()
@@ -62,19 +67,19 @@ func insertTestData(db *sql.DB) {
 		log.Fatal(err)
 	}
 	defer stmt.Close()
-	for i := 0; i < 5; i++ {
-		randomTime := asDatabaseTime(time.Now().Add(-time.Duration(rand.Intn(100)) * time.Hour))
-		_, err = stmt.Exec(
-			uuid.New().String(),
-			"Some title " + strconv.Itoa(i),
-			"This is a description " + strconv.Itoa(i),
-			randomTime, randomTime, randomTime)
-		
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Println("One row added")
-	}
+	//for i := 0; i < 5; i++ {
+	//	randomTime := asDatabaseTime(time.Now().Add(-time.Duration(rand.Intn(100)) * time.Hour))
+	//	_, err = stmt.Exec(
+	//		uuid.New().String(),
+	//		"Some title " + strconv.Itoa(i),
+	//		"This is a description " + strconv.Itoa(i),
+	//		randomTime, randomTime, randomTime)
+	//
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
+	//	log.Println("One row added")
+	//}
 	tx.Commit()
 }
 
