@@ -291,6 +291,7 @@ input DocumentInput {
     description: String
     date: String!
     tags: [TagInput]!
+    binaryData: String
 }
 
 input TagInput {
@@ -2114,6 +2115,12 @@ func (ec *executionContext) unmarshalInputDocumentInput(ctx context.Context, obj
 		case "tags":
 			var err error
 			it.Tags, err = ec.unmarshalNTagInput2ᚕᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚐTagInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "binaryData":
+			var err error
+			it.BinaryData, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}

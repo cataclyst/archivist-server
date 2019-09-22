@@ -28,6 +28,7 @@ input DocumentInput {
     description: String
     date: String!
     tags: [TagInput]!
+    binaryData: String
 }
 
 input TagInput {

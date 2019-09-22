@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	archivist_server "github.com/cataclyst/archivist-server"
 	"github.com/google/uuid"
 	"log"
 	"time"
@@ -116,7 +115,7 @@ type mutationResolver struct{ *Resolver }
 const iso8601DateFormat = "2006-01-02"
 const iso8601DateTimeFormat = "2006-01-02 15:04:05"
 
-func (r *mutationResolver) CreateDocument(ctx context.Context, input archivist_server.DocumentInput) (*models.Document, error) {
+func (r *mutationResolver) CreateDocument(ctx context.Context, input models.DocumentInput) (*models.Document, error) {
 	date, err := time.Parse(iso8601DateFormat, input.Date)
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not parse document date")
