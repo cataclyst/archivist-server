@@ -3,9 +3,11 @@ package graphql
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"fmt"
 	"github.com/google/uuid"
 	"log"
+	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -157,6 +159,26 @@ func (r *mutationResolver) CreateDocument(ctx context.Context, input models.Docu
 			documentID, tagID)
 		if err != nil {
 			return nil, errors.Wrap(err, "Could not insert tag on document")
+		}
+	}
+
+	if input.BinaryData != nil {
+
+		documentData, err := base64.StdEncoding.DecodeString(*input.BinaryData)
+		if err != nil {
+			return nil, errors.Wrap(err, "Could not decode document data - is it properly Base64 encoded?")
+		}
+
+		filename := "./docs/" + documentID
+		file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Could not open file descriptor for writing: %s", filename)
+		}
+		defer file.Close()
+
+		_, err = file.Write(documentData)
+		if err != nil {
+			return nil, errors.Wrap(err, "Could not write document data to file")
 		}
 	}
 
