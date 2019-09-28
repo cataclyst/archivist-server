@@ -81,9 +81,6 @@ func (r *queryResolver) RecentDocuments(ctx context.Context) ([]*models.Document
 		result = append(result, &document)
 	}
 
-	// TODO remove - just to simulate latency
-	//time.Sleep(2000 * time.Millisecond)
-
 	return result, nil
 }
 
