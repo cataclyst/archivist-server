@@ -13,11 +13,11 @@ type Document struct {
 
 // DocumentInput represents the data that must be specified to create a new Document
 type DocumentInput struct {
-	Title       string      `json:"title"`
-	Description *string     `json:"description"`
-	Date        string      `json:"date"`
-	Tags        []*TagInput `json:"tags"`
-	BinaryData  *string     `json:"binaryData"`
+	Title        string             `json:"title"`
+	Description  *string            `json:"description"`
+	Date         string             `json:"date"`
+	Tags         []*TagInput        `json:"tags"`
+	DocumentData *DocumentDataInput `json:"documentData"`
 }
 
 // DocumentDataInput represents the binary data plus its metadata that

@@ -159,9 +159,10 @@ func (r *mutationResolver) CreateDocument(ctx context.Context, input models.Docu
 		}
 	}
 
-	if input.BinaryData != nil {
+	if input.DocumentData != nil {
 
-		documentData, err := base64.StdEncoding.DecodeString(*input.BinaryData)
+		inputDocumentData := *input.DocumentData
+		documentData, err := base64.StdEncoding.DecodeString(inputDocumentData.BinaryDataBase64)
 		if err != nil {
 			return nil, errors.Wrap(err, "Could not decode document data - is it properly Base64 encoded?")
 		}
@@ -177,17 +178,16 @@ func (r *mutationResolver) CreateDocument(ctx context.Context, input models.Docu
 		if err != nil {
 			return nil, errors.Wrap(err, "Could not write document data to file")
 		}
+		log.Printf("Document created. Mime type: %s -- filename: %s", inputDocumentData.MimeType, inputDocumentData.FileName)
 	}
 
-	log.Printf("Document created. New ID: %v", documentID)
-
 	return &models.Document{
-		ID: documentID,
-		Title: input.Title,
+		ID:          documentID,
+		Title:       input.Title,
 		Description: input.Description,
-		Date: date.Format(iso8601DateFormat),
-		CreatedAt: currentTime.Format(iso8601DateTimeFormat),
-		ModifiedAt: currentTime.Format(iso8601DateTimeFormat),
-		TagIDs: nil,
+		Date:        date.Format(iso8601DateFormat),
+		CreatedAt:   currentTime.Format(iso8601DateTimeFormat),
+		ModifiedAt:  currentTime.Format(iso8601DateTimeFormat),
+		TagIDs:      nil,
 	}, nil
 }
