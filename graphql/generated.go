@@ -12,7 +12,6 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
-	archivist_server "github.com/cataclyst/archivist-server"
 	"github.com/cataclyst/archivist-server/models"
 	"github.com/vektah/gqlparser"
 	"github.com/vektah/gqlparser/ast"
@@ -56,7 +55,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateDocument func(childComplexity int, input archivist_server.DocumentInput) int
+		CreateDocument func(childComplexity int, input models.DocumentInput) int
 	}
 
 	Query struct {
@@ -75,7 +74,7 @@ type DocumentResolver interface {
 	Tags(ctx context.Context, obj *models.Document) ([]*models.Tag, error)
 }
 type MutationResolver interface {
-	CreateDocument(ctx context.Context, input archivist_server.DocumentInput) (*models.Document, error)
+	CreateDocument(ctx context.Context, input models.DocumentInput) (*models.Document, error)
 }
 type QueryResolver interface {
 	RecentDocuments(ctx context.Context) ([]*models.Document, error)
@@ -157,7 +156,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateDocument(childComplexity, args["input"].(archivist_server.DocumentInput)), true
+		return e.complexity.Mutation.CreateDocument(childComplexity, args["input"].(models.DocumentInput)), true
 
 	case "Query.document":
 		if e.complexity.Query.Document == nil {
@@ -307,9 +306,9 @@ input TagInput {
 func (ec *executionContext) field_Mutation_createDocument_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 archivist_server.DocumentInput
+	var arg0 models.DocumentInput
 	if tmp, ok := rawArgs["input"]; ok {
-		arg0, err = ec.unmarshalNDocumentInput2githubᚗcomᚋcataclystᚋarchivistᚑserverᚐDocumentInput(ctx, tmp)
+		arg0, err = ec.unmarshalNDocumentInput2githubᚗcomᚋcataclystᚋarchivistᚑserverᚋmodelsᚐDocumentInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -664,7 +663,7 @@ func (ec *executionContext) _Mutation_createDocument(ctx context.Context, field 
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateDocument(rctx, args["input"].(archivist_server.DocumentInput))
+		return ec.resolvers.Mutation().CreateDocument(rctx, args["input"].(models.DocumentInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2088,8 +2087,8 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputDocumentInput(ctx context.Context, obj interface{}) (archivist_server.DocumentInput, error) {
-	var it archivist_server.DocumentInput
+func (ec *executionContext) unmarshalInputDocumentInput(ctx context.Context, obj interface{}) (models.DocumentInput, error) {
+	var it models.DocumentInput
 	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
@@ -2114,7 +2113,7 @@ func (ec *executionContext) unmarshalInputDocumentInput(ctx context.Context, obj
 			}
 		case "tags":
 			var err error
-			it.Tags, err = ec.unmarshalNTagInput2ᚕᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚐTagInput(ctx, v)
+			it.Tags, err = ec.unmarshalNTagInput2ᚕᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚋmodelsᚐTagInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2130,8 +2129,8 @@ func (ec *executionContext) unmarshalInputDocumentInput(ctx context.Context, obj
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputTagInput(ctx context.Context, obj interface{}) (archivist_server.TagInput, error) {
-	var it archivist_server.TagInput
+func (ec *executionContext) unmarshalInputTagInput(ctx context.Context, obj interface{}) (models.TagInput, error) {
+	var it models.TagInput
 	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
@@ -2621,7 +2620,7 @@ func (ec *executionContext) marshalNDocument2ᚖgithubᚗcomᚋcataclystᚋarchi
 	return ec._Document(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNDocumentInput2githubᚗcomᚋcataclystᚋarchivistᚑserverᚐDocumentInput(ctx context.Context, v interface{}) (archivist_server.DocumentInput, error) {
+func (ec *executionContext) unmarshalNDocumentInput2githubᚗcomᚋcataclystᚋarchivistᚑserverᚋmodelsᚐDocumentInput(ctx context.Context, v interface{}) (models.DocumentInput, error) {
 	return ec.unmarshalInputDocumentInput(ctx, v)
 }
 
@@ -2704,7 +2703,7 @@ func (ec *executionContext) marshalNTag2ᚖgithubᚗcomᚋcataclystᚋarchivist�
 	return ec._Tag(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNTagInput2ᚕᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚐTagInput(ctx context.Context, v interface{}) ([]*archivist_server.TagInput, error) {
+func (ec *executionContext) unmarshalNTagInput2ᚕᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚋmodelsᚐTagInput(ctx context.Context, v interface{}) ([]*models.TagInput, error) {
 	var vSlice []interface{}
 	if v != nil {
 		if tmp1, ok := v.([]interface{}); ok {
@@ -2714,9 +2713,9 @@ func (ec *executionContext) unmarshalNTagInput2ᚕᚖgithubᚗcomᚋcataclystᚋ
 		}
 	}
 	var err error
-	res := make([]*archivist_server.TagInput, len(vSlice))
+	res := make([]*models.TagInput, len(vSlice))
 	for i := range vSlice {
-		res[i], err = ec.unmarshalOTagInput2ᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚐTagInput(ctx, vSlice[i])
+		res[i], err = ec.unmarshalOTagInput2ᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚋmodelsᚐTagInput(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
 		}
@@ -3087,15 +3086,15 @@ func (ec *executionContext) marshalOTag2ᚕᚖgithubᚗcomᚋcataclystᚋarchivi
 	return ret
 }
 
-func (ec *executionContext) unmarshalOTagInput2githubᚗcomᚋcataclystᚋarchivistᚑserverᚐTagInput(ctx context.Context, v interface{}) (archivist_server.TagInput, error) {
+func (ec *executionContext) unmarshalOTagInput2githubᚗcomᚋcataclystᚋarchivistᚑserverᚋmodelsᚐTagInput(ctx context.Context, v interface{}) (models.TagInput, error) {
 	return ec.unmarshalInputTagInput(ctx, v)
 }
 
-func (ec *executionContext) unmarshalOTagInput2ᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚐTagInput(ctx context.Context, v interface{}) (*archivist_server.TagInput, error) {
+func (ec *executionContext) unmarshalOTagInput2ᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚋmodelsᚐTagInput(ctx context.Context, v interface{}) (*models.TagInput, error) {
 	if v == nil {
 		return nil, nil
 	}
-	res, err := ec.unmarshalOTagInput2githubᚗcomᚋcataclystᚋarchivistᚑserverᚐTagInput(ctx, v)
+	res, err := ec.unmarshalOTagInput2githubᚗcomᚋcataclystᚋarchivistᚑserverᚋmodelsᚐTagInput(ctx, v)
 	return &res, err
 }
 
