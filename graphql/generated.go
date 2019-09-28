@@ -290,7 +290,13 @@ input DocumentInput {
     description: String
     date: String!
     tags: [TagInput]!
-    binaryData: String
+    documentData: DocumentDataInput
+}
+
+input DocumentDataInput {
+    binaryDataBase64: String!
+    fileName: String!
+    mimeType: String!
 }
 
 input TagInput {
@@ -2087,6 +2093,36 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputDocumentDataInput(ctx context.Context, obj interface{}) (models.DocumentDataInput, error) {
+	var it models.DocumentDataInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "binaryDataBase64":
+			var err error
+			it.BinaryDataBase64, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "fileName":
+			var err error
+			it.FileName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "mimeType":
+			var err error
+			it.MimeType, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputDocumentInput(ctx context.Context, obj interface{}) (models.DocumentInput, error) {
 	var it models.DocumentInput
 	var asMap = obj.(map[string]interface{})
@@ -2117,9 +2153,9 @@ func (ec *executionContext) unmarshalInputDocumentInput(ctx context.Context, obj
 			if err != nil {
 				return it, err
 			}
-		case "binaryData":
+		case "documentData":
 			var err error
-			it.BinaryData, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			it.DocumentData, err = ec.unmarshalODocumentDataInput2ᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚋmodelsᚐDocumentDataInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3021,6 +3057,18 @@ func (ec *executionContext) marshalODocument2ᚖgithubᚗcomᚋcataclystᚋarchi
 		return graphql.Null
 	}
 	return ec._Document(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalODocumentDataInput2githubᚗcomᚋcataclystᚋarchivistᚑserverᚋmodelsᚐDocumentDataInput(ctx context.Context, v interface{}) (models.DocumentDataInput, error) {
+	return ec.unmarshalInputDocumentDataInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalODocumentDataInput2ᚖgithubᚗcomᚋcataclystᚋarchivistᚑserverᚋmodelsᚐDocumentDataInput(ctx context.Context, v interface{}) (*models.DocumentDataInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalODocumentDataInput2githubᚗcomᚋcataclystᚋarchivistᚑserverᚋmodelsᚐDocumentDataInput(ctx, v)
+	return &res, err
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

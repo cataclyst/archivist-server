@@ -20,6 +20,14 @@ type DocumentInput struct {
 	BinaryData  *string     `json:"binaryData"`
 }
 
+// DocumentDataInput represents the binary data plus its metadata that
+// makes up the actual file for a Document
+type DocumentDataInput struct {
+	BinaryDataBase64 string `json:"binaryDataBase64"`
+	FileName         string `json:"fileName"`
+	MimeType         string `json:"mimeType"`
+}
+
 // Tag represents a tag that is assigned to a document
 type Tag struct {
 	Title   string  `json:"title"`

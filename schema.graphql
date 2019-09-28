@@ -28,7 +28,13 @@ input DocumentInput {
     description: String
     date: String!
     tags: [TagInput]!
-    binaryData: String
+    documentData: DocumentDataInput
+}
+
+input DocumentDataInput {
+    binaryDataBase64: String!
+    fileName: String!
+    mimeType: String!
 }
 
 input TagInput {

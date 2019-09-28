@@ -14,6 +14,8 @@ models:
     model: github.com/cataclyst/archivist-server/models.Tag
   DocumentInput:
     model: github.com/cataclyst/archivist-server/models.DocumentInput
+  DocumentDataInput:
+    model: github.com/cataclyst/archivist-server/models.DocumentDataInput
   TagInput:
     model: github.com/cataclyst/archivist-server/models.TagInput
 resolver:
