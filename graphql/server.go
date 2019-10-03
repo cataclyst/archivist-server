@@ -1,11 +1,11 @@
 package graphql
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
 	"strconv"
-	"database/sql"
-	
+
 	"github.com/99designs/gqlgen/handler"
 	"github.com/rs/cors"
 )
@@ -22,7 +22,7 @@ func StartGraphQlServer(port int, db *sql.DB) {
 
 	playgroundHandler := handler.Playground("GraphQL playground", "/query")
 	queryHandler := handler.GraphQL(NewExecutableSchema(Config{Resolvers: &Resolver{
-		db:db,
+		db: db,
 	}}))
 
 	corsHandler := cors.New(cors.Options{
