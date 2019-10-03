@@ -45,7 +45,13 @@ func main() {
 func insertTestData(db *sql.DB) {
 
 	sqlStmts := []string{
-		`create table if not exists Document (id text not null primary key, title text not null, description text, date text not null, created_at text not null, modified_at text not null);`,
+		`create table if not exists Document (
+			id text not null primary key,
+			title text not null, description text,
+			date text not null,
+			document_mime_type text,
+			created_at text not null,
+			modified_at text not null);`,
 		`create table if not exists Tag (id text not null primary key, title text not null, context text);`,
 		`create table if not exists Document_Tag (document_id text not null, tag_id text not null);`,
 	}

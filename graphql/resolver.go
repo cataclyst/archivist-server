@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -16,6 +17,8 @@ import (
 )
 
 // THIS CODE IS A STARTING POINT ONLY. IT WILL NOT BE UPDATED WITH SCHEMA CHANGES.
+
+const documentFileDir = "./docs/"
 
 type Resolver struct {
 	db *sql.DB
@@ -126,10 +129,17 @@ func (r *mutationResolver) CreateDocument(ctx context.Context, input models.Docu
 	documentID := uuid.New().String()
 	currentTime := time.Now().Truncate(time.Millisecond).UTC()
 
-	sqlStmt := `insert into Document (id, title, description, date, created_at, modified_at)
-                values (?, ?, ?, ?, ?, ?)`
+	var mimeType string
+	if input.DocumentData != nil {
+		mimeType = input.DocumentData.MimeType
+	}
+
+	log.Printf("This is the mime-type: %s", mimeType)
+
+	sqlStmt := `insert into Document (id, title, description, date, document_mime_type, created_at, modified_at)
+                values (?, ?, ?, ?, ?, ?, ?)`
 	_, err = r.Resolver.db.ExecContext(ctx, sqlStmt,
-		documentID, input.Title, input.Description, date, currentTime, currentTime)
+		documentID, input.Title, input.Description, date, mimeType, currentTime, currentTime)
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not insert document into database")
 	}
@@ -167,7 +177,17 @@ func (r *mutationResolver) CreateDocument(ctx context.Context, input models.Docu
 			return nil, errors.Wrap(err, "Could not decode document data - is it properly Base64 encoded?")
 		}
 
-		filename := "./docs/" + documentID
+		originalFileName := input.DocumentData.FileName
+		var fileExtension string
+		firstPeriodInFileNameAt := strings.Index(originalFileName, ".")
+		if firstPeriodInFileNameAt >= 0 {
+			fileExtension = originalFileName[firstPeriodInFileNameAt:]
+		}
+
+		filename := documentFileDir + documentID + fileExtension
+
+		os.MkdirAll(documentFileDir, 0644)
+
 		file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not open file descriptor for writing: %s", filename)
