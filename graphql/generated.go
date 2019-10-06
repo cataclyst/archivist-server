@@ -55,7 +55,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateDocument func(childComplexity int, input models.DocumentInput) int
+		CreateOrUpdateDocument func(childComplexity int, input models.DocumentInput) int
 	}
 
 	Query struct {
@@ -74,7 +74,7 @@ type DocumentResolver interface {
 	Tags(ctx context.Context, obj *models.Document) ([]*models.Tag, error)
 }
 type MutationResolver interface {
-	CreateDocument(ctx context.Context, input models.DocumentInput) (*models.Document, error)
+	CreateOrUpdateDocument(ctx context.Context, input models.DocumentInput) (*models.Document, error)
 }
 type QueryResolver interface {
 	RecentDocuments(ctx context.Context) ([]*models.Document, error)
@@ -146,17 +146,17 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Document.Title(childComplexity), true
 
-	case "Mutation.createDocument":
-		if e.complexity.Mutation.CreateDocument == nil {
+	case "Mutation.createOrUpdateDocument":
+		if e.complexity.Mutation.CreateOrUpdateDocument == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_createDocument_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_createOrUpdateDocument_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateDocument(childComplexity, args["input"].(models.DocumentInput)), true
+		return e.complexity.Mutation.CreateOrUpdateDocument(childComplexity, args["input"].(models.DocumentInput)), true
 
 	case "Query.document":
 		if e.complexity.Query.Document == nil {
@@ -282,10 +282,11 @@ type Query {
 }
 
 type Mutation {
-    createDocument(input: DocumentInput!): Document
+    createOrUpdateDocument(input: DocumentInput!): Document
 }
 
 input DocumentInput {
+    id: ID!
     title: String!
     description: String
     date: String!
@@ -309,7 +310,7 @@ input TagInput {
 
 // region    ***************************** args.gotpl *****************************
 
-func (ec *executionContext) field_Mutation_createDocument_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_createOrUpdateDocument_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 models.DocumentInput
@@ -643,7 +644,7 @@ func (ec *executionContext) _Document_modifiedAt(ctx context.Context, field grap
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_createDocument(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_createOrUpdateDocument(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -660,7 +661,7 @@ func (ec *executionContext) _Mutation_createDocument(ctx context.Context, field 
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_createDocument_args(ctx, rawArgs)
+	args, err := ec.field_Mutation_createOrUpdateDocument_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -669,7 +670,7 @@ func (ec *executionContext) _Mutation_createDocument(ctx context.Context, field 
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateDocument(rctx, args["input"].(models.DocumentInput))
+		return ec.resolvers.Mutation().CreateOrUpdateDocument(rctx, args["input"].(models.DocumentInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2129,6 +2130,12 @@ func (ec *executionContext) unmarshalInputDocumentInput(ctx context.Context, obj
 
 	for k, v := range asMap {
 		switch k {
+		case "id":
+			var err error
+			it.ID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "title":
 			var err error
 			it.Title, err = ec.unmarshalNString2string(ctx, v)
@@ -2275,8 +2282,8 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
-		case "createDocument":
-			out.Values[i] = ec._Mutation_createDocument(ctx, field)
+		case "createOrUpdateDocument":
+			out.Values[i] = ec._Mutation_createOrUpdateDocument(ctx, field)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

@@ -20,10 +20,11 @@ type Query {
 }
 
 type Mutation {
-    createDocument(input: DocumentInput!): Document
+    createOrUpdateDocument(input: DocumentInput!): Document
 }
 
 input DocumentInput {
+    id: ID!
     title: String!
     description: String
     date: String!

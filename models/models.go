@@ -13,6 +13,7 @@ type Document struct {
 
 // DocumentInput represents the data that must be specified to create a new Document
 type DocumentInput struct {
+	ID           string             `json:"id"`
 	Title        string             `json:"title"`
 	Description  *string            `json:"description"`
 	Date         string             `json:"date"`
