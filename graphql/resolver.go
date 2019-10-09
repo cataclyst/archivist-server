@@ -126,7 +126,10 @@ func (r *mutationResolver) CreateOrUpdateDocument(ctx context.Context, input mod
 
 	log.Printf("Got these tags: %#v", input.Tags)
 
-	documentID := uuid.New().String()
+	documentID := input.ID
+	if documentID == "" {
+		documentID = uuid.New().String()
+	}
 	currentTime := time.Now().Truncate(time.Millisecond).UTC()
 
 	var mimeType string
@@ -134,35 +137,27 @@ func (r *mutationResolver) CreateOrUpdateDocument(ctx context.Context, input mod
 		mimeType = input.DocumentData.MimeType
 	}
 
-	log.Printf("This is the mime-type: %s", mimeType)
-
-	sqlStmt := `insert into Document (id, title, description, date, document_mime_type, created_at, modified_at)
+	sqlStmt := `insert or replace into Document (id, title, description, date, document_mime_type, created_at, modified_at)
                 values (?, ?, ?, ?, ?, ?, ?)`
+
 	_, err = r.Resolver.db.ExecContext(ctx, sqlStmt,
 		documentID, input.Title, input.Description, date, mimeType, currentTime, currentTime)
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not insert document into database")
 	}
 
-	for _, tag := range input.Tags {
-		row := r.Resolver.db.QueryRowContext(
-			ctx, `select id from Tag where title = ? and context = ?`,
-			tag.Title, tag.Context)
-		var tagID string
-		if err := row.Scan(&tagID); err == sql.ErrNoRows {
-			log.Print("Tag does not yet exist. Creating it...")
-			tagID = uuid.New().String()
-			_, err = r.Resolver.db.ExecContext(
-				ctx, `insert into Tag (id, title, context) values (?, ?, ?)`,
-				tagID, tag.Title, tag.Context)
-			if err != nil {
-				return nil, errors.Wrapf(err, "Could not create new tag")
-			}
-		} else if err != nil {
-			return nil, errors.Wrapf(err, "Could not check for existing tag %s:%s", tag.Title, tag.Context)
-		}
+	_, err = r.Resolver.db.ExecContext(ctx, `delete from Document_Tag where document_id = ?`, documentID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Could not delete tags from document %s", documentID)
+	}
 
-		_, err := r.Resolver.db.ExecContext(ctx, `insert into Document_Tag (document_id, tag_id) values (?, ?)`,
+	for _, tag := range input.Tags {
+		tagID, err := r.ensureTagExists(ctx, tag)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Could not ensure tag '%s' exists", tag.Title)
+		}
+		_, err = r.Resolver.db.ExecContext(ctx,
+			`insert into Document_Tag (document_id, tag_id) values (?, ?)`,
 			documentID, tagID)
 		if err != nil {
 			return nil, errors.Wrap(err, "Could not insert tag on document")
@@ -210,4 +205,24 @@ func (r *mutationResolver) CreateOrUpdateDocument(ctx context.Context, input mod
 		ModifiedAt:  currentTime.Format(iso8601DateTimeFormat),
 		TagIDs:      nil,
 	}, nil
+}
+
+func (r *mutationResolver) ensureTagExists(ctx context.Context, tag *models.TagInput) (string, error) {
+	row := r.Resolver.db.QueryRowContext(
+		ctx, `select id from Tag where title = ? and context = ?`,
+		tag.Title, tag.Context)
+	var tagID string
+	if err := row.Scan(&tagID); err == sql.ErrNoRows {
+		log.Print("Tag does not yet exist. Creating it...")
+		tagID = uuid.New().String()
+		_, err = r.Resolver.db.ExecContext(
+			ctx, `insert into Tag (id, title, context) values (?, ?, ?)`,
+			tagID, tag.Title, tag.Context)
+		if err != nil {
+			return "", errors.Wrapf(err, "Could not create new tag")
+		}
+	} else if err != nil {
+		return "", errors.Wrapf(err, "Could not check for existing tag %s:%s", tag.Title, tag.Context)
+	}
+	return tagID, nil
 }
