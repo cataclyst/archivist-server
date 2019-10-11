@@ -137,13 +137,31 @@ func (r *mutationResolver) CreateOrUpdateDocument(ctx context.Context, input mod
 		mimeType = input.DocumentData.MimeType
 	}
 
-	sqlStmt := `insert or replace into Document (id, title, description, date, document_mime_type, created_at, modified_at)
-                values (?, ?, ?, ?, ?, ?, ?)`
+	// Try updating the document first, in case it already exists:
+	updateStatement := `
+		update Document
+		set title = ?, description = ?, date = ?, document_mime_type = ?, modified_at = ?
+		where id = ?`
 
-	_, err = r.Resolver.db.ExecContext(ctx, sqlStmt,
-		documentID, input.Title, input.Description, date, mimeType, currentTime, currentTime)
+	execInfo, err := r.Resolver.db.ExecContext(ctx, updateStatement,
+		input.Title, input.Description, date, mimeType, currentTime, documentID)
 	if err != nil {
-		return nil, errors.Wrap(err, "Could not insert document into database")
+		return nil, errors.Wrap(err, "Could not (try to) update document")
+	}
+	rowsUpdated, err := execInfo.RowsAffected()
+	if err != nil {
+		return nil, errors.Wrap(err, "Could not resolve number of updated documents")
+	}
+
+	// Document does not exist yet -- create it:
+	if rowsUpdated == 0 {
+		insertStatement := `insert into Document (id, title, description, date, document_mime_type, created_at, modified_at)
+                values (?, ?, ?, ?, ?, ?, ?)`
+		_, err = r.Resolver.db.ExecContext(ctx, insertStatement,
+			documentID, input.Title, input.Description, date, mimeType, currentTime, currentTime)
+		if err != nil {
+			return nil, errors.Wrap(err, "Could not insert document into database")
+		}
 	}
 
 	_, err = r.Resolver.db.ExecContext(ctx, `delete from Document_Tag where document_id = ?`, documentID)
@@ -164,6 +182,7 @@ func (r *mutationResolver) CreateOrUpdateDocument(ctx context.Context, input mod
 		}
 	}
 
+	// Store the binary file data for the document:
 	if input.DocumentData != nil {
 
 		inputDocumentData := *input.DocumentData
@@ -172,6 +191,7 @@ func (r *mutationResolver) CreateOrUpdateDocument(ctx context.Context, input mod
 			return nil, errors.Wrap(err, "Could not decode document data - is it properly Base64 encoded?")
 		}
 
+		// Determine file extension:
 		originalFileName := input.DocumentData.FileName
 		var fileExtension string
 		firstPeriodInFileNameAt := strings.Index(originalFileName, ".")
@@ -181,7 +201,10 @@ func (r *mutationResolver) CreateOrUpdateDocument(ctx context.Context, input mod
 
 		filename := documentFileDir + documentID + fileExtension
 
-		os.MkdirAll(documentFileDir, 0644)
+		err = os.MkdirAll(documentFileDir, 0644)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Could not create document file directory: %s", documentFileDir)
+		}
 
 		file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
@@ -193,7 +216,6 @@ func (r *mutationResolver) CreateOrUpdateDocument(ctx context.Context, input mod
 		if err != nil {
 			return nil, errors.Wrap(err, "Could not write document data to file")
 		}
-		log.Printf("Document created. Mime type: %s -- filename: %s", inputDocumentData.MimeType, inputDocumentData.FileName)
 	}
 
 	return &models.Document{
