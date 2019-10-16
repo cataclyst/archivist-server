@@ -17,6 +17,7 @@ type Query {
     recentDocuments: [Document!]
     document(id: ID!): Document!
     tags: [Tag!]
+    search(term: String!): [Document!]
 }
 
 type Mutation {

@@ -112,6 +112,10 @@ func (r *queryResolver) Tags(ctx context.Context) ([]*models.Tag, error) {
 	panic("not implemented")
 }
 
+func (r *queryResolver) Search(ctx context.Context, term string) ([]*models.Document, error) {
+	panic("implement me")
+}
+
 type mutationResolver struct{ *Resolver }
 
 const iso8601DateFormat = "2006-01-02"
