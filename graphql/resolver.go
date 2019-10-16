@@ -67,6 +67,7 @@ func (r *queryResolver) RecentDocuments(ctx context.Context) ([]*models.Document
 	var result []*models.Document
 	rows, err := r.Resolver.db.QueryContext(ctx, sqlStmt)
 	if err != nil {
+		// TODO really fatal here?
 		log.Fatalf("%q: %s\n", err, sqlStmt)
 	}
 	defer rows.Close()
@@ -113,7 +114,41 @@ func (r *queryResolver) Tags(ctx context.Context) ([]*models.Tag, error) {
 }
 
 func (r *queryResolver) Search(ctx context.Context, term string) ([]*models.Document, error) {
-	panic("implement me")
+	log.Printf("Searching for documents with %s...", term)
+
+	fuzzyTerm := "%" + term + "%"
+	searchStatement := `
+		select id, title, description, date from Document D
+		where D.title       like ?
+        or    D.description like ?
+        or    D.id in (
+			select DT.document_id
+            from   Document_Tag DT
+			where  DT.tag_id in (select T.id from Tag T where T.title like ? or T.context like ?)
+		)`
+
+	var result []*models.Document
+	rows, err := r.Resolver.db.QueryContext(ctx, searchStatement, fuzzyTerm, fuzzyTerm, fuzzyTerm, fuzzyTerm)
+	if err != nil {
+		// TODO really fatal here?
+		log.Fatalf("%q: %s\n", err, searchStatement)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var document models.Document
+		err := rows.Scan(
+			&document.ID,
+			&document.Title,
+			&document.Description,
+			&document.Date)
+		if err != nil {
+			return nil, errors.Wrap(err, "Could not scan database row to models.Document")
+		}
+		result = append(result, &document)
+	}
+
+	return result, nil
 }
 
 type mutationResolver struct{ *Resolver }
