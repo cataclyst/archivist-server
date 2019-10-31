@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -171,19 +170,21 @@ func (r *mutationResolver) CreateOrUpdateDocument(ctx context.Context, input mod
 	}
 	currentTime := time.Now().Truncate(time.Millisecond).UTC()
 
+	var originalFileName string
 	var mimeType string
 	if input.DocumentData != nil {
+		originalFileName = input.DocumentData.FileName
 		mimeType = input.DocumentData.MimeType
 	}
 
 	// Try updating the document first, in case it already exists:
 	updateStatement := `
 		update Document
-		set title = ?, description = ?, date = ?, document_mime_type = ?, modified_at = ?
+		set title = ?, description = ?, date = ?, document_file_name = ?, document_mime_type = ?, modified_at = ?
 		where id = ?`
 
 	execInfo, err := r.Resolver.db.ExecContext(ctx, updateStatement,
-		input.Title, input.Description, date, mimeType, currentTime, documentID)
+		input.Title, input.Description, date, originalFileName, mimeType, currentTime, documentID)
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not (try to) update document")
 	}
@@ -221,7 +222,8 @@ func (r *mutationResolver) CreateOrUpdateDocument(ctx context.Context, input mod
 		}
 	}
 
-	// Store the binary file data for the document:
+	// Store the binary file data for the document.
+	// The file name of the resulting file is "<uuid>-<original file name>".
 	if input.DocumentData != nil {
 
 		inputDocumentData := *input.DocumentData
@@ -230,15 +232,7 @@ func (r *mutationResolver) CreateOrUpdateDocument(ctx context.Context, input mod
 			return nil, errors.Wrap(err, "Could not decode document data - is it properly Base64 encoded?")
 		}
 
-		// Determine file extension:
-		originalFileName := input.DocumentData.FileName
-		var fileExtension string
-		firstPeriodInFileNameAt := strings.Index(originalFileName, ".")
-		if firstPeriodInFileNameAt >= 0 {
-			fileExtension = originalFileName[firstPeriodInFileNameAt:]
-		}
-
-		filename := documentFileDir + documentID + fileExtension
+		filename := documentFileDir + documentID + "-" + originalFileName
 
 		err = os.MkdirAll(documentFileDir, 0644)
 		if err != nil {

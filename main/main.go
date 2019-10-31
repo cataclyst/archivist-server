@@ -49,6 +49,7 @@ func insertTestData(db *sql.DB) {
 			id text not null primary key,
 			title text not null, description text,
 			date text not null,
+			document_file_name text,
 			document_mime_type text,
 			created_at text not null,
 			modified_at text not null);`,
